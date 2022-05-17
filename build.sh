@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eu
+set -e
 
 # Runs docker container.
 # Main purpose is to use on Windows but can be used by all, especially to avoid
@@ -47,10 +47,18 @@ echo "Running in docker container ${DOCKER_IMAGE}..."
 
     # Another annoying Linux issue: failed to initialize build cache at /.cache/go-build
     # This is because we don't have HOME defined for Linux.
+    #
+    # Completely disable if running in GitHub actions CI because we still get error
+    # mkdir /home/runner/.cache/go-build/00: permission denied
+    #
     # See:
     #   - https://forum.golangbridge.org/t/go-build-failed/19551
     #   - https://github.com/openshift/release/issues/9748
     Z_GOCACHE="$(go env GOCACHE)"
+    if test "true" == "${GITHUB_ACTIONS}"
+    then
+      Z_GOCACHE="/tmp"
+    fi
 
     set -x
     docker run \
@@ -65,6 +73,7 @@ echo "Running in docker container ${DOCKER_IMAGE}..."
       -e Z_GOOS="${Z_GOOS}" \
       -e Z_GOARCH="${Z_GOARCH}" \
       -e Z_GOBIN="${PWD}/bin_tools/linux_amd64" \
+      -e GOLANGCI_LINT_CACHE=/tmp \
       ${DOCKER_IMAGE} \
       "$@"
   )
