@@ -44,6 +44,14 @@ echo "Running in docker container ${DOCKER_IMAGE}..."
         USER_FLAG="-u $(id -u):$(id -g)"
     fi
 
+
+    # Another annoying Linux issue: failed to initialize build cache at /.cache/go-build
+    # This is because we don't have HOME defined for Linux.
+    # See:
+    #   - https://forum.golangbridge.org/t/go-build-failed/19551
+    #   - https://github.com/openshift/release/issues/9748
+    Z_GOCACHE="$(go env GOCACHE)"
+
     set -x
     docker run \
       -i \
@@ -51,7 +59,9 @@ echo "Running in docker container ${DOCKER_IMAGE}..."
       ${USER_FLAG} \
       --rm \
       -v "${PWD}:${PWD}":cached \
+      -v "${Z_GOCACHE}":"${Z_GOCACHE}":cached \
       -w ${PWD} \
+      -e GOCACHE="${Z_GOCACHE}" \
       -e Z_GOOS="${Z_GOOS}" \
       -e Z_GOARCH="${Z_GOARCH}" \
       -e Z_GOBIN="${PWD}/bin_tools/linux_amd64" \
