@@ -14,16 +14,16 @@ var (
 	envCustomPrefix         = normalizeKey("CUSTOMCONNSTR_")
 )
 
-// envVars is an implementation of .NET EnvironmentVariablesConfigurationProvider.
+// envVarsConfigProvider is an implementation of .NET EnvironmentVariablesConfigurationProvider.
 // See: https://github.com/dotnet/runtime/blob/release/6.0/src/libraries/Microsoft.Extensions.Configuration.EnvironmentVariables/src/EnvironmentVariablesConfigurationProvider.cs
-type envVars struct {
+type envVarsConfigProvider struct {
 	configurationProviderImpl
 	prefix     string
 	prefixOrig string
 }
 
-func newEnvVars(prefix string) *envVars {
-	e := &envVars{
+func newEnvVars(prefix string) *envVarsConfigProvider {
+	e := &envVarsConfigProvider{
 		configurationProviderImpl: *newConfigurationProviderImpl(),
 		// Don't use normalize, the "__" should not be replaced in prefix, just lower case.
 		// This is how ASP.NET behaves, there is even a test for this.
@@ -34,7 +34,7 @@ func newEnvVars(prefix string) *envVars {
 	return e
 }
 
-func (e *envVars) Load() {
+func (e *envVarsConfigProvider) Load() {
 	varMap := make(map[string]string)
 	for _, val := range os.Environ() {
 		fields := strings.SplitN(val, "=", 2)
@@ -43,7 +43,7 @@ func (e *envVars) Load() {
 	e.load(varMap)
 }
 
-func (e *envVars) load(envVars map[string]string) {
+func (e *envVarsConfigProvider) load(envVars map[string]string) {
 	m := make(map[string]string, len(envVars))
 
 	for k, v := range envVars {
@@ -81,7 +81,7 @@ func (e *envVars) load(envVars map[string]string) {
 	e.m = m
 }
 
-func (e *envVars) addIfPrefixed(m map[string]string, key string, val string) {
+func (e *envVarsConfigProvider) addIfPrefixed(m map[string]string, key string, val string) {
 	if strings.HasPrefix(key, e.prefix) {
 		key = strings.TrimPrefix(key, e.prefix)
 		key = strings.TrimPrefix(key, keyDelimiter)
@@ -89,12 +89,12 @@ func (e *envVars) addIfPrefixed(m map[string]string, key string, val string) {
 	}
 }
 
-func (e *envVars) trimPrefix(key string, prefix string) string {
+func (e *envVarsConfigProvider) trimPrefix(key string, prefix string) string {
 	key = strings.TrimPrefix(key, prefix)
 	key = strings.TrimPrefix(key, keyDelimiter)
 	return key
 }
 
-func (e *envVars) String() string {
+func (e *envVarsConfigProvider) String() string {
 	return fmt.Sprintf("EnvironmentVariablesConfigurationProvider Prefix: '%s'", e.prefixOrig)
 }

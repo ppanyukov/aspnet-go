@@ -10,7 +10,7 @@ import (
 // These tests are a port of EnvironmentVariablesTest.cs
 // https://github.com/dotnet/runtime/blob/release/6.0/src/libraries/Microsoft.Extensions.Configuration.EnvironmentVariables/tests/EnvironmentVariablesTest.cs
 //
-func Test_envVars_Load_LoadKeyValuePairsFromEnvironmentDictionary(t *testing.T) {
+func Test_envVarsConfigProvider_Load_LoadKeyValuePairsFromEnvironmentDictionary(t *testing.T) {
 	in := map[string]string{
 		"DefaultConnection:ConnectionString": "TestConnectionString",
 		"DefaultConnection:Provider":         "SqlClient",
@@ -28,7 +28,7 @@ func Test_envVars_Load_LoadKeyValuePairsFromEnvironmentDictionary(t *testing.T) 
 	assert.Equal(t, "EnvironmentVariablesConfigurationProvider Prefix: ''", envConfigSrc.String())
 }
 
-func Test_envVars_Load_LoadKeyValuePairsFromEnvironmentDictionaryWithPrefix(t *testing.T) {
+func Test_envVarsConfigProvider_Load_LoadKeyValuePairsFromEnvironmentDictionaryWithPrefix(t *testing.T) {
 	in := map[string]string{
 		"DefaultConnection:ConnectionString": "TestConnectionString",
 		"DefaultConnection:Provider":         "SqlClient",
@@ -44,7 +44,7 @@ func Test_envVars_Load_LoadKeyValuePairsFromEnvironmentDictionaryWithPrefix(t *t
 	assert.Equal(t, "EnvironmentVariablesConfigurationProvider Prefix: 'DefaultConnection'", envConfigSrc.String())
 }
 
-func Test_envVars_Load_LoadKeyValuePairsFromAzureEnvironment(t *testing.T) {
+func Test_envVarsConfigProvider_Load_LoadKeyValuePairsFromAzureEnvironment(t *testing.T) {
 	in := map[string]string{
 		"APPSETTING_AppName":  "TestAppName",
 		"CUSTOMCONNSTR_db1":   "CustomConnStr",
@@ -75,7 +75,7 @@ func Test_envVars_Load_LoadKeyValuePairsFromAzureEnvironment(t *testing.T) {
 	assert.Equal(t, "CommonEnvValue", envConfigSrc.Get("CommonEnv"))
 }
 
-func Test_envVars_Load_LoadKeyValuePairsFromAzureEnvironmentWithPrefix(t *testing.T) {
+func Test_envVarsConfigProvider_Load_LoadKeyValuePairsFromAzureEnvironmentWithPrefix(t *testing.T) {
 	in := map[string]string{
 		"CUSTOMCONNSTR_db1":   "CustomConnStr",
 		"SQLCONNSTR_db2":      "SQLConnStr",
@@ -94,7 +94,7 @@ func Test_envVars_Load_LoadKeyValuePairsFromAzureEnvironmentWithPrefix(t *testin
 	assert.Equal(t, "System.Data.SqlClient", envConfigSrc.Get("db4_ProviderName"))
 }
 
-func Test_envVars_Load_LastVariableAddedWhenKeyIsDuplicatedInAzureEnvironment(t *testing.T) {
+func Test_envVarsConfigProvider_Load_LastVariableAddedWhenKeyIsDuplicatedInAzureEnvironment(t *testing.T) {
 	in := map[string]string{
 		"ConnectionStrings:db2": "CommonEnvValue",
 		"SQLCONNSTR_db2":        "SQLConnStr",
@@ -107,7 +107,7 @@ func Test_envVars_Load_LastVariableAddedWhenKeyIsDuplicatedInAzureEnvironment(t 
 	assert.Equal(t, "System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:db2_ProviderName"))
 }
 
-func Test_envVars_Load_LastVariableAddedWhenMultipleEnvironmentVariablesWithSameNameButDifferentCaseExist(t *testing.T) {
+func Test_envVarsConfigProvider_Load_LastVariableAddedWhenMultipleEnvironmentVariablesWithSameNameButDifferentCaseExist(t *testing.T) {
 	in := map[string]string{
 		"CommonEnv": "CommonEnvValue1",
 		"commonenv": "commonenvValue2",
@@ -122,7 +122,7 @@ func Test_envVars_Load_LastVariableAddedWhenMultipleEnvironmentVariablesWithSame
 
 }
 
-func Test_envVars_Load_ReplaceDoubleUnderscoreInEnvironmentVariables(t *testing.T) {
+func Test_envVarsConfigProvider_Load_ReplaceDoubleUnderscoreInEnvironmentVariables(t *testing.T) {
 	in := map[string]string{
 		"data__ConnectionString": "connection",
 		"SQLCONNSTR_db1":         "connStr",
@@ -135,7 +135,7 @@ func Test_envVars_Load_ReplaceDoubleUnderscoreInEnvironmentVariables(t *testing.
 	assert.Equal(t, "System.Data.SqlClient", envConfigSrc.Get("ConnectionStrings:db1_ProviderName"))
 }
 
-func Test_envVars_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesButNotPrefix(t *testing.T) {
+func Test_envVarsConfigProvider_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesButNotPrefix(t *testing.T) {
 	// Here we should get:
 	//	 prefix:         "test__prefix__with__double__underscores__"
 	//	 normalized key: "test:prefix:with:double:underscores:data:connectionstring
@@ -153,7 +153,7 @@ func Test_envVars_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesButNotPrefix
 	assert.Equal(t, "", envConfigSrc.Get("data:ConnectionString"))
 }
 
-func Test_envVars_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesButNotInAnomalousPrefix(t *testing.T) {
+func Test_envVarsConfigProvider_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesButNotInAnomalousPrefix(t *testing.T) {
 	in := map[string]string{
 		"_____EXPERIMENTAL__data__ConnectionString": "connection",
 	}
@@ -164,7 +164,7 @@ func Test_envVars_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesButNotInAnom
 	assert.Equal(t, "connection", envConfigSrc.Get("data:ConnectionString"))
 }
 
-func Test_envVars_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesWithDuplicatedPrefix(t *testing.T) {
+func Test_envVarsConfigProvider_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesWithDuplicatedPrefix(t *testing.T) {
 	in := map[string]string{
 		"test__test__ConnectionString": "connection",
 	}
@@ -177,7 +177,7 @@ func Test_envVars_Load_ReplaceDoubleUnderscoreInEnvironmentVariablesWithDuplicat
 	assert.Equal(t, "", envConfigSrc.Get("test:ConnectionString"))
 }
 
-func Test_envVars_Load_PrefixPreventsLoadingSqlConnectionStrings(t *testing.T) {
+func Test_envVarsConfigProvider_Load_PrefixPreventsLoadingSqlConnectionStrings(t *testing.T) {
 	in := map[string]string{
 		"test__test__ConnectionString": "connection",
 		"SQLCONNSTR_db1":               "connStr",
@@ -203,7 +203,7 @@ func Test_envVars_Load_PrefixPreventsLoadingSqlConnectionStrings(t *testing.T) {
 
 // ------- Extra custom tests  -------
 
-func Test_envVars_Load_LoadsFromEnv(t *testing.T) {
+func Test_envVarsConfigProvider_Load_LoadsFromEnv(t *testing.T) {
 	var err error
 
 	err = os.Setenv("myFoo", "foo value = with equal sign")
