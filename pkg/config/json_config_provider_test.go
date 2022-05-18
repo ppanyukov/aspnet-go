@@ -53,11 +53,19 @@ func Test_jsonConfigProvider_Load_Simple(t *testing.T) {
 	err := provider.Load(strings.NewReader(json))
 	assert.NoError(t, err)
 
+	// elements at the root
 	assert.Equal(t, "string value", provider.Get("string"))
 	assert.Equal(t, "1", provider.Get("number"))
 	assert.Equal(t, "1.23", provider.Get("float"))
 	assert.Equal(t, "true", provider.Get("bool"))
 	assert.Equal(t, "", provider.Get("null"))
+
+	// elements at the root, using different case to grab values
+	assert.Equal(t, "string value", provider.Get("STRING"))
+	assert.Equal(t, "1", provider.Get("NUMBER"))
+	assert.Equal(t, "1.23", provider.Get("FLOAT"))
+	assert.Equal(t, "true", provider.Get("BOOL"))
+	assert.Equal(t, "", provider.Get("NULL"))
 
 	// array of strings
 	assert.Equal(t, "", provider.Get("array_of_strings"))
