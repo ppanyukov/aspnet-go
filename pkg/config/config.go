@@ -14,4 +14,3 @@ func normalizeKey(k string) string {
 	k = strings.Replace(k, "__", keyDelimiter, -1)
 	return k
 }
-
