@@ -8,6 +8,7 @@ import (
 )
 
 func Test_jsonConfigProvider_Load_Simple(t *testing.T) {
+	// Covers most cases
 	json := `
 {
 	// comments are allowed
