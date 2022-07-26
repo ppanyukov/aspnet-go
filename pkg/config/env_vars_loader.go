@@ -2,11 +2,34 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
-// Env vars with thesse prefixes have special meaning in .NET.
+// envVarsLoader is an implementation of .NET EnvironmentVariablesConfigurationProvider.
+//
+// It does it in the same way as ASP.NET EnvironmentVariablesConfigurationProvider.
+// The actual code was broadly taken as-is from ASP.NET.
+//
+// The tests were ported from ASP.NET too, so the behaviour is identical.
+//
+// See: https://github.com/dotnet/runtime/blob/release/6.0/src/libraries/Microsoft.Extensions.Configuration.EnvironmentVariables/src/EnvironmentVariablesConfigurationProvider.cs
+type envVarsLoader struct {
+	prefix string
+}
+
+// newEnvVarsLoader creates a loader of config from env variables.
+func newEnvVarsLoader(prefix string) *envVarsLoader {
+	e := &envVarsLoader{
+		// Don't use normalize, the "__" should not be replaced in prefix, just lower case.
+		// This is how ASP.NET behaves, there is even a test for this.
+		prefix: strings.ToLower(prefix),
+	}
+
+	return e
+}
+
+// Env vars with these prefixes have special meaning in .NET.
+// These are used
 var (
 	envMySqlServerPrefix    = normalizeKey("MYSQLCONNSTR_")
 	envSqlAzureServerPrefix = normalizeKey("SQLAZURECONNSTR_")
@@ -14,38 +37,10 @@ var (
 	envCustomPrefix         = normalizeKey("CUSTOMCONNSTR_")
 )
 
-// envVarsConfigProvider is an implementation of .NET EnvironmentVariablesConfigurationProvider.
-// See: https://github.com/dotnet/runtime/blob/release/6.0/src/libraries/Microsoft.Extensions.Configuration.EnvironmentVariables/src/EnvironmentVariablesConfigurationProvider.cs
-type envVarsConfigProvider struct {
-	configurationProviderImpl
-	prefix     string
-	prefixOrig string
-}
-
-func newEnvVars(prefix string) *envVarsConfigProvider {
-	e := &envVarsConfigProvider{
-		configurationProviderImpl: *newConfigurationProviderImpl(),
-		// Don't use normalize, the "__" should not be replaced in prefix, just lower case.
-		// This is how ASP.NET behaves, there is even a test for this.
-		prefix:     strings.ToLower(prefix),
-		prefixOrig: prefix,
-	}
-
-	return e
-}
-
-func (e *envVarsConfigProvider) Load() {
-	varMap := make(map[string]string)
-	for _, val := range os.Environ() {
-		fields := strings.SplitN(val, "=", 2)
-		varMap[fields[0]] = fields[1]
-	}
-	e.load(varMap)
-}
-
-func (e *envVarsConfigProvider) load(envVars map[string]string) {
+func (e *envVarsLoader) Load(envVars map[string]string) map[string]string {
 	m := make(map[string]string, len(envVars))
 
+	// NOTE: the weird logic around SQL is taken as-is from ASP.NET codebase.
 	for k, v := range envVars {
 		prefix := ""
 		provider := ""
@@ -78,10 +73,10 @@ func (e *envVarsConfigProvider) load(envVars map[string]string) {
 		}
 	}
 
-	e.m = m
+	return m
 }
 
-func (e *envVarsConfigProvider) addIfPrefixed(m map[string]string, key string, val string) {
+func (e *envVarsLoader) addIfPrefixed(m map[string]string, key string, val string) {
 	if strings.HasPrefix(key, e.prefix) {
 		key = strings.TrimPrefix(key, e.prefix)
 		key = strings.TrimPrefix(key, keyDelimiter)
@@ -89,12 +84,8 @@ func (e *envVarsConfigProvider) addIfPrefixed(m map[string]string, key string, v
 	}
 }
 
-func (e *envVarsConfigProvider) trimPrefix(key string, prefix string) string {
+func (e *envVarsLoader) trimPrefix(key string, prefix string) string {
 	key = strings.TrimPrefix(key, prefix)
 	key = strings.TrimPrefix(key, keyDelimiter)
 	return key
-}
-
-func (e *envVarsConfigProvider) String() string {
-	return fmt.Sprintf("EnvironmentVariablesConfigurationProvider Prefix: '%s'", e.prefixOrig)
 }

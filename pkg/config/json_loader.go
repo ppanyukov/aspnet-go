@@ -11,21 +11,43 @@ import (
 	"github.com/pkg/errors"
 )
 
-// jsonConfigFileParser implements .NET equivalent of JsonConfigurationFileParser.
+// jsonLoader implements .NET equivalent of JsonConfigurationFileParser.
+//
+// It parses JSON into a flat map of key value pair, e.g:
+//	{
+//		"foo": "bar",
+//		"ConnectionStrings": {
+//			"SqlServer": "<some value>"
+//		}
+//	}
+//
+// gets parsed into:
+//	"foo": "bar"
+//	"ConnectionStrings:SqlServer": "<some value>"
 //
 // See: https://github.com/dotnet/runtime/blob/release/6.0/src/libraries/Microsoft.Extensions.Configuration.Json/src/JsonConfigurationFileParser.cs
-type jsonConfigFileParser struct {
+type jsonLoader struct {
 	data  map[string]string
 	paths stringStack
 }
 
-func newJsonConfigFileParser() *jsonConfigFileParser {
-	return &jsonConfigFileParser{
+func newJsonLoader() *jsonLoader {
+	return &jsonLoader{
 		data: make(map[string]string),
 	}
 }
 
-func (j *jsonConfigFileParser) parseJson(r io.Reader) (map[string]interface{}, error) {
+func (j *jsonLoader) Load(r io.Reader) (map[string]string, error) {
+	rootElement, err := j.parseJson(r)
+	if err != nil {
+		return j.data, err
+	}
+
+	err = j.visitElement(rootElement)
+	return j.data, err
+}
+
+func (j *jsonLoader) parseJson(r io.Reader) (map[string]interface{}, error) {
 	// strip out comments as these are common
 	b := bytes.Buffer{}
 	scanner := bufio.NewScanner(r)
@@ -59,28 +81,7 @@ func (j *jsonConfigFileParser) parseJson(r io.Reader) (map[string]interface{}, e
 	}
 }
 
-func (j *jsonConfigFileParser) Parse(r io.Reader) (map[string]string, error) {
-	rootElement, err := j.parseJson(r)
-	if err != nil {
-		return j.data, err
-	}
-
-	//data, err := ioutil.ReadAll(r)
-	//if err != nil {
-	//	return j.data, err
-	//}
-	//
-	//var rootElement map[string]interface{}
-	//err = json.Unmarshal(data, &rootElement)
-	//if err != nil {
-	//	return j.data, err
-	//}
-
-	err = j.visitElement(rootElement)
-	return j.data, err
-}
-
-func (j *jsonConfigFileParser) visitElement(element map[string]interface{}) error {
+func (j *jsonLoader) visitElement(element map[string]interface{}) error {
 	isEmpty := true
 
 	for k, v := range element {
@@ -100,7 +101,7 @@ func (j *jsonConfigFileParser) visitElement(element map[string]interface{}) erro
 	return nil
 }
 
-func (j *jsonConfigFileParser) enterContext(k string) {
+func (j *jsonLoader) enterContext(k string) {
 	path := k
 	if j.paths.Count() > 0 {
 		path = fmt.Sprintf("%s%s%s", j.paths.Peek(), keyDelimiter, path)
@@ -110,11 +111,11 @@ func (j *jsonConfigFileParser) enterContext(k string) {
 	j.paths.Push(path)
 }
 
-func (j *jsonConfigFileParser) exitContext() {
+func (j *jsonLoader) exitContext() {
 	j.paths.Pop()
 }
 
-func (j *jsonConfigFileParser) visitValue(v interface{}) error {
+func (j *jsonLoader) visitValue(v interface{}) error {
 	switch val := v.(type) {
 	case map[string]interface{}:
 		err := j.visitElement(val)
