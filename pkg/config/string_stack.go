@@ -1,6 +1,6 @@
 package config
 
-// stringStack is an implementation of stack mainly to support `jsonConfigFileParser`.
+// stringStack is an implementation of stack mainly to support `jsonLoader`.
 //
 // TODO: write tests stringStack?
 type stringStack []string

@@ -49,8 +49,7 @@ func Test_jsonConfigProvider_Load_Simple(t *testing.T) {
 }
 `
 
-	provider := newJsonConfigProvider()
-	err := provider.Load(strings.NewReader(json))
+	provider, err := NewJsonSource([]byte(json)).Build()
 	assert.NoError(t, err)
 
 	// elements at the root
@@ -105,8 +104,7 @@ func Test_jsonConfigProvider_Load_ArraysNotSupported(t *testing.T) {
 ]
 `
 
-	provider := newJsonConfigProvider()
-	err := provider.Load(strings.NewReader(json))
+	_, err := NewJsonSource([]byte(json)).Build()
 	if assert.Error(t, err) {
 		hasCorrectMessage := strings.Contains(err.Error(), "arrays are not supported as root json object")
 		assert.Truef(t, hasCorrectMessage, "array objects should return correct message, was: %v", err.Error())
