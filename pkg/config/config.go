@@ -253,13 +253,13 @@ func (c *rootConfigImpl) Source() Source {
 }
 
 func (c *rootConfigImpl) GetEntry(key string) Entry {
-	for _, config := range c.configs {
-		var val string
+	for i := len(c.configs) - 1; i >= 0; i-- {
+		val := ""
+		config := c.configs[i]
 		if found := config.TryGet(key, &val); found {
 			return newEntryImpl(key, val, config.Source())
 		}
 	}
-
 	return newEntryImpl(key, "", nil)
 }
 
