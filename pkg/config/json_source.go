@@ -37,7 +37,7 @@ func (s *jsonSource) Build() (Config, error) {
 	r := bytes.NewBuffer(s.json)
 	m, err := parser.Load(r)
 	if err != nil {
-		return nil, errors.Errorf("%s: %v", s.name, err)
+		return nil, errors.Errorf("jsonSource: %s: %v", s.name, err)
 	}
 
 	return newConfigImpl(s, m), nil
