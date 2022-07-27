@@ -208,26 +208,13 @@ func (c *rootConfigImpl) addConfig(config Config) {
 }
 
 func (c *rootConfigImpl) Get(key string) string {
-	// IMPORTANT: provider further down in the chain overrides previous providers.
-	// So this is basically find the first value from the end of the list.
-	var val string
-	for i := len(c.configs) - 1; i >= 0; i-- {
-		config := c.configs[i]
-		if found := config.TryGet(key, &val); found {
-			return val
-		}
-	}
-	return ""
+	return c.GetEntry(key).Value()
 }
 
 func (c *rootConfigImpl) TryGet(key string, val *string) (found bool) {
-	for i := len(c.configs) - 1; i >= 0; i-- {
-		config := c.configs[i]
-		if found = config.TryGet(key, val); found {
-			return found
-		}
-	}
-	return false
+	entry, found := c.tryGetEntry(key)
+	*val = entry.Value()
+	return found
 }
 
 func (c *rootConfigImpl) Keys() []string {
@@ -253,14 +240,8 @@ func (c *rootConfigImpl) Source() Source {
 }
 
 func (c *rootConfigImpl) GetEntry(key string) Entry {
-	for i := len(c.configs) - 1; i >= 0; i-- {
-		val := ""
-		config := c.configs[i]
-		if found := config.TryGet(key, &val); found {
-			return newEntryImpl(key, val, config.Source())
-		}
-	}
-	return newEntryImpl(key, "", nil)
+	entry, _ := c.tryGetEntry(key)
+	return entry
 }
 
 func (c *rootConfigImpl) GetEntries() []Entry {
@@ -284,6 +265,17 @@ func (c *rootConfigImpl) GetEntries() []Entry {
 	})
 
 	return entries
+}
+
+func (c *rootConfigImpl) tryGetEntry(key string) (result Entry, found bool) {
+	for i := len(c.configs) - 1; i >= 0; i-- {
+		val := ""
+		config := c.configs[i]
+		if found := config.TryGet(key, &val); found {
+			return newEntryImpl(key, val, config.Source()), true
+		}
+	}
+	return newEntryImpl(key, "", nil), false
 }
 
 // Entry is a configuration entry combining key, value and the source of the value.
